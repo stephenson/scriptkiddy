@@ -1,0 +1,45 @@
+#!/bin/sh
+
+set -e
+
+echo ""
+echo ""
+echo "Running tests"
+echo ""
+echo ""
+
+bundle exec rspec || (echo "Test did not pass, fix tests and try agin."; exit 1)
+
+echo ""
+echo ""
+echo "Test pass, pushing to Github."
+echo ""
+echo ""
+
+if ! git branch | grep "* master"
+then
+  echo "Can only release from master branch"
+  exit 1
+fi
+
+git push origin master || (echo "Not up to date with remote master"; exit 1)
+
+git push heroku master || (echo "Push to Heroku failed."; exit 1)
+
+echo ""
+echo ""
+echo "Code deployed to Heroku, turning on maintenance mode to migrate database."
+echo ""
+echo ""
+
+heroku maintenance:on
+
+heroku run rake db:migrate
+
+heroku maintenance:off
+
+echo ""
+echo ""
+echo "Maintenance mode off. Deploy done."
+echo ""
+echo ""
